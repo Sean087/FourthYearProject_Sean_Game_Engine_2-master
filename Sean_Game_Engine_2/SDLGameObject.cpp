@@ -51,16 +51,16 @@ void SDLGameObject::moveTowardPoint(int x, int y)
 {
 	if (m_x != x) {
 		if (m_x < x)
-			m_x += 5;
+			m_x += 2;
 		else
-			m_x -= 5;
+			m_x -= 2;
 	}
 
 	if (m_y != y) {
 		if (m_y < y)
-			m_y += 5;
+			m_y += 2;
 		else
-			m_y -= 5;
+			m_y -= 2;
 	}
 }
 
