@@ -403,8 +403,24 @@ void Game::handleEvents()
 					bRenderConnections = !bRenderConnections;						// Set bRenderConnections to its inverse (flag for rendering connections between nodes)
 					break;
 				case SDLK_SPACE:													// If space bar is pressed, perform the following
-					bFollowPath = !bFollowPath;										// Set bFollowPath to its inverse (Start following a path or pause it)
-					break;
+					sNode * p = nodeEnd;											// Create a new temp node to store endNode, from which the parent can be referenced
+					if (p->parent != nullptr)										// If the end nodes parent is not null, a path exists
+					{
+						if (player1->getX() == nodeEnd->x*nodeSize &&
+							player1->getY() == nodeEnd->y*nodeSize)					// If the player has reached the end node, they cannot initiate path following
+						{
+							std::cout << "ERROR: Cannot being path following if player is not at beginning!\n";
+						}
+						else
+						{
+							bFollowPath = !bFollowPath;								// Set bFollowPath to its inverse (Start following a path or pause it)
+							break;
+						}
+					}
+					else
+					{
+						std::cout << "ERROR: No path exists!\n";					// Path does not exist, object cannot follow the path
+					}
 			}// end swtitch
 		}// end if
 	}// end while
