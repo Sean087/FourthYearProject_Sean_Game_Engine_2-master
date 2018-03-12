@@ -34,6 +34,6 @@ int main(int argc, char* argv[])
 	std::cout << "TERMINATION STATUS: Game closing...\n";										// Loop has been broken, closing the game
 	TheGame::Instance()->clean();																// Perform shut-down operation clean()
 
-	//system("pause");																			// Keep console open after quitting for debugging purposes
+																								//system("pause");																			// Keep console open after quitting for debugging purposes
 	return 0;
 }// end main

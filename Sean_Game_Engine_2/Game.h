@@ -68,9 +68,9 @@ public:
 
 private:
 
-	SDL_Window* m_pWindow;
+	SDL_Window * m_pWindow;
 	SDL_Renderer* m_pRenderer;
-	
+
 	std::vector<GameObject*> m_gameObjects;
 
 	int m_currentFrame;
