@@ -7,6 +7,9 @@
 #define __Game__
 
 #include <vector>
+#include <iostream>
+#include <list>
+#include <stack>
 #include "GameObject.h"
 
 class Game
@@ -58,6 +61,11 @@ public:
 	void setDRClickEvent(bool click) { m_bDRClickEvent = click; }
 	int getDRClickEvent() { return m_bDRClickEvent; }
 
+	bool getExitStatus() { return m_bQuit; }
+
+	int getWinSizeW();
+	int getWinSizeH();
+
 private:
 
 	SDL_Window* m_pWindow;
@@ -80,6 +88,8 @@ private:
 	bool m_bDLClickEvent = false;
 
 	bool m_bDRClickEvent = false;
+
+	bool m_bQuit = false;															// Flag for quitting the application
 };
 
 typedef Game TheGame;

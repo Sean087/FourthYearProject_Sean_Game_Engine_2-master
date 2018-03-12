@@ -7,12 +7,8 @@
 #include "TextureManager.h"
 #include "Player.h"
 #include "Enemy.h"
-#include <iostream>
-#include <list>
-#include <stack>
 
 Game* Game::s_pInstance = 0;														// Game singleton
-bool quit = false;																	// Flag for quitting the application
 SDL_Event the_event;																// SDL_Event for handling I/O events
 
 bool bRenderConnections = false;													// Render underlying node connections (Toggled during runtime with 'R' key)
@@ -36,7 +32,6 @@ struct sNode
 };// end struct
 
 int nodeSize = 40;																	// Size of the node (SDL_Rect) in pixels
-int nodeBorder = 20;																// Size of border in pixels (Space between nodses) - NOT WORKING ATM
 
 sNode *nodes = nullptr;																// Null pointer - Will be an array of sNode's
 int nMapWidth = 16;																	// Width of the map in number of nodes
@@ -354,7 +349,7 @@ void Game::render()
 }// end render
 
 
-//--------------------------------------------------------------------------------------------------------------
+ //----------------------------------------------EVENT HANDLING-----------------------------------------------
 
 
 void Game::handleEvents()
@@ -364,8 +359,8 @@ void Game::handleEvents()
 	{
 		//if (the_event.key.keysym.sym == SDLK_ESCAPE) quit = true;					// CAUSE OF WEIRD CRASH WHEN CURSOR ON LEFT SIDE OF WINDOW
 		if (the_event.type == SDL_KEYDOWN && 
-			the_event.key.keysym.sym == SDLK_ESCAPE) quit = true;					// If escape key is hit, shut down the program
-		else if (the_event.type == SDL_QUIT) quit = true;							// If user press the close button shut down the program
+			the_event.key.keysym.sym == SDLK_ESCAPE) m_bQuit = true;					// If escape key is hit, shut down the program
+		else if (the_event.type == SDL_QUIT) m_bQuit = true;							// If user press the close button shut down the program
 
 		if (the_event.type == SDL_MOUSEBUTTONDOWN && 
 			the_event.button.button == SDL_BUTTON_LEFT) {							// If mouse button is pressed perform the following
@@ -416,7 +411,7 @@ void Game::handleEvents()
 }// end handleEvents
 
 
-//--------------------------------------------------------------------------------------------------------------
+ //----------------------------------------------EXIT CLEANUP-----------------------------------------------
 
 
 void Game::clean() {
@@ -427,7 +422,7 @@ void Game::clean() {
 }// end clean
 
 
-//--------------------------------------------------------------------------------------------------------------
+ //----------------------------------------------PATHFINDING-----------------------------------------------
 
 bool Game::AStarSolver()
 {
@@ -571,7 +566,7 @@ bool Game::AStarSolver()
 }// end AStarSolver
 
 
-//--------------------------------------------------------------------------------------------------------------
+ //----------------------------------------------PATH FOLLOWING-----------------------------------------------
 
 bool Game::followPath() {
 	//-------------------- MAKE OBJECT FOLLOW THE A* PATH --------------------
@@ -625,37 +620,15 @@ bool Game::followPath() {
 //}// end followPath
 
 
-int main(int argc, char* argv[])
+//----------------------------------------------OTHER-----------------------------------------------
+
+
+int Game::getWinSizeW()
 {
-	std::cout << "INIT STATUS: Game init attempt...\n";
-	if (TheGame::Instance()->init("Seans Game Framework 2 - v0.3 (Path Following!)", 100, 100, dynamicWindowSize_W, dynamicWindowSize_H, false))
-	{
-		std::cout << "GAME STATUS: Starting main loop...\n";
-		while (TheGame::Instance()->running() && quit == false)							// If the game is running, peform the following
-		{
+	return dynamicWindowSize_W;																	// Return the dynamic window width for main init
+}
 
-			TheGame::Instance()->handleEvents();										// Poll to see if user closed the window
-			TheGame::Instance()->update();												// Update Nodes and Game Objects
-			TheGame::Instance()->render();												// Render Nodes and Game Objects to the screen
-
-			TheGame::Instance()->setClickEvent(false);									// Set m_bClickEvent flag to false so a new click can be registered
-			TheGame::Instance()->setDLClickEvent(false);								// Set m_bDLClickEvent flag to false so a new click can be registered
-			TheGame::Instance()->setDRClickEvent(false);								// Set m_bDRClickEvent flag to false so a new click can be registered
-
-
-			SDL_Delay(10);																// add the delay
-
-		}// end while
-	}// end if
-	else																				// Else the program did not initalize properly
-	{
-		std::cout << "INIT STATUS: Game init failure - " << SDL_GetError() << "\n";		// Print error
-		return -1;																		// Return with exit status -1 (error encountered)
-	}// end else
-
-	std::cout << "TERMINATION STATUS: Game closing...\n";								// Loop has been broken, closing the game
-	TheGame::Instance()->clean();														// Perform shut-down operation clean()
-
-	//system("pause");																	// Keep console open after quitting for debugging purposes
-	return 0;
-}// end main
+int Game::getWinSizeH()
+{
+	return dynamicWindowSize_H;																	// Return the dynamic window height fot main init
+}
