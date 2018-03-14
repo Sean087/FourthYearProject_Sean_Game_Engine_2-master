@@ -241,13 +241,6 @@ void Game::update()
 		std::cout << "ERROR: Cannot place end node while object is moving.\n";
 	}// end else
 
-	 /* ____ GAME OBJECT UPDATES ____ */
-	 //for (std::vector<GameObject*>::size_type i = 0; i != m_gameObjects.size(); i++)	// Loop through objects and perform the following
-	 //{
-	 //	m_gameObjects[i]->update();														// Call update function of object
-	 //	followPath();																	// Call games follow path function
-	 //}// end for
-
 	if (bFollowPath)																	// If an object is following the path
 		followPath();																	// Begin/Continue to follow the path
 
@@ -325,12 +318,6 @@ void Game::render()
 	}// end if
 
 	SDL_SetRenderDrawColor(getRenderer(), 0, 0, 0, 255);								// Set draw colour to black for background
-
-	/* ____ GAME OBJECT RENDERING ____ */
-	//for (std::vector<GameObject*>::size_type i = 0; i != m_gameObjects.size(); i++)	// Loop through objects and perform the following
-	//{
-	//	m_gameObjects[i]->draw();														// Render current object to the screen
-	//}// end for
 
 	player1->draw();
 
@@ -505,29 +492,6 @@ bool Game::followPath() {
 
 	return true;
 }// end followPath
-
- //bool Game::followPath() {
- //	//-------------------- MAKE OBJECT FOLLOW THE A* PATH --------------------
- //	for (std::vector<GameObject*>::size_type i = 0; i != m_gameObjects.size(); i++)	// Loop through objects and perform the following
- //	{
- //		if (nodeEnd != nullptr && !pathToFollow.empty())													// If the end node is not a null pointer perform the following
- //		{
- //			sNode *currentPoint = pathToFollow.top();														// Current point to move towards is set to the top node on the stack (closest node)	
- //		
- //			m_gameObjects[i]->moveTowardPoint(currentPoint->x*nodeSize, currentPoint->y*nodeSize);			// Move object toward current node on stack
- //		
- //			if (m_gameObjects[i]->getX() == currentPoint->x*nodeSize)										// If the objects X-position matches the X-position of the node...
- //			{
- //				if (m_gameObjects[i]->getY() == currentPoint->y*nodeSize)									// If the objects Y-position matches the Y-position of the node...
- //				{
- //					pathToFollow.pop();																		// Pop the node from the stack because object has reached its position
- //				}// end if
- //			}// end if
- //		}// end if
- //	}// end for
- //
- //	return true;
- //}// end followPath
 
 
 //----------------------------------------------OTHER-----------------------------------------------
