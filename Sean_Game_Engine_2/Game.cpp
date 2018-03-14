@@ -7,7 +7,7 @@
 #include "TextureManager.h"
 #include "Player.h"
 #include "Enemy.h"
-#include "Node.h"
+#include "PathAlgorithm.h"															// Include my path finding algorithm library
 
 Game* Game::s_pInstance = 0;														// Game singleton
 SDL_Event the_event;																// SDL_Event for handling I/O events
@@ -432,6 +432,8 @@ void Game::clean() {
 
 bool Game::AStarSolver()
 {
+	/* ____ PLAYER PREPERATION ____ */
+
 	int x = nodeStart->x;															// Get current nodes X position
 	int y = nodeStart->y;															// Get current nodes Y position
 	x = x * nodeSize;																// Upscale by factor node size for visualization 
@@ -439,13 +441,14 @@ bool Game::AStarSolver()
 
 	player1->setPosition(x, y);														// Set players position to the new start node
 
-	if (!pathToFollow.empty()) {
+	if (!pathToFollow.empty()) {													// If a path exisits...
 		while (!pathToFollow.empty())
 		{
-			pathToFollow.pop();
-		}
-	}
-	/* ____ PREPERATION ____ */
+			pathToFollow.pop();														// Erase the current path for the new one
+		}// end while
+	}// end if
+	
+	/* ____ MAP PREPERATION FOR PATH FINDING ____ */
 
 	for (int x = 0; x < nMapWidth; x++)												// Resets each node in the map to default states
 		for (int y = 0; y < nMapHeight; y++)
@@ -454,108 +457,13 @@ bool Game::AStarSolver()
 			nodes[y*nMapWidth + x].fGlobalGoal = INFINITY;							// Default is Infinity so we can consider it when searching
 			nodes[y*nMapWidth + x].fLocalGoal = INFINITY;							// Default is also Infinity so we can consider it when searching
 			nodes[y*nMapWidth + x].parent = nullptr;								// All nodes begin with no parent
-		}
-
-	/* ------------------------------------------------------------------------------------------
-	*	Since we do not know the distances between nodes for heuristic, use Pythagoras Theorom.
-	*
-	*  Used since it's effective for finding distance between center-points of nodes:
-	*		- (a^a) + (b^b) = (c^c)
-	*		- Example:
-	*			Node a = (15, 8)
-	*			Node b = (14, 8)
-	*			(15 - 14)^2 + (8 - 8)^2 = 1
-	*			sqrt(1) = 1
-	*			c = 1
-	* ------------------------------------------------------------------------------------------
-	*/
-	auto distance = [](sNode* a, sNode* b)
-	{
-		/*std::cout << "Distannce between A: (" << a->x << ", " << a->y << ") and B: (" << b->x << ", " << b->y << ") is: "
-		<< sqrtf((a->x - b->x)*(a->x - b->x) + (a->y - b->y)*(a->y - b->y)) << std::endl;*/
-		return sqrtf((a->x - b->x)*(a->x - b->x) + (a->y - b->y)*(a->y - b->y));
-	};// end distance
-
-	auto heuristic = [distance](sNode* a, sNode* b)									// Heuristic is the distance between points so use distance function
-	{
-		return distance(a, b);
-	};// end heuristic
-
-	sNode *nodeCurrent = nodeStart;													// Set the current node to the beginning
-	nodeStart->fLocalGoal = 0.0f;													// The local goal is 0 since we didn't start searching yet
-	nodeStart->fGlobalGoal = heuristic(nodeStart, nodeEnd);							// Global goal = distance between start node and end node
-
-	/* ------------------------------------------------------------------------------------------
-	*	While the algorithm is searching, newly discovered nodes are added to the not-tested list,
-	*	which queues them for testing for a potential path.
-	*
-	*  The first node we want to test if the start node so we queue that node first.
-	*
-	*	NOTE TO SELF: Attempt to change list to priority queue to avoid manual sorting.
-	* ------------------------------------------------------------------------------------------
-	*/
-	std::list<sNode*> listNotTestedNodes;											// Not tested list where new nodes are queded for testing
-	listNotTestedNodes.push_back(nodeStart);										// Add the start node for testing
-
-	/* ------------------------------------------------------------------------------------------
-	*	CONDITION: (!listNotTestedNodes.empty() && !nodeCurrent->bVisited)
-	*		- While there are nodes to test && the end node has not been visited, run A*
-	*		- Just because it has found the end node doesn't mean it found the shortest path.
-	*		- This will find THE SHORTEST PATH by continuuing the search while potentially
-	*		  shorter paths exist.
-	* ------------------------------------------------------------------------------------------
-	*/
-	while (!listNotTestedNodes.empty() && !nodeEnd->bVisited)						// Finds the shortest path - while there are nodes to test and the end node has not been visited
-	{
-		listNotTestedNodes.sort([](const sNode* lhs, const sNode* rhs)
-		{ return lhs->fGlobalGoal < rhs->fGlobalGoal; });							// Sort all untested nodes by shortest global goal (possible shortest path)
-
-		while (!listNotTestedNodes.empty() && listNotTestedNodes.front()->bVisited)	// Potential to have already visited nodes at front of list therefore:
-			listNotTestedNodes.pop_front();											// Remove them from the list as they have already been visited
-
-		if (listNotTestedNodes.empty())												// If there are no valid nodes to test, abort.
-			break;
-
-		nodeCurrent = listNotTestedNodes.front();									// Set node at front of the list to current node for testing
-		nodeCurrent->bVisited = true;												// Only need to test a node once so set it to visited
-
-		for (auto nodeNeighbour : nodeCurrent->vecNeighbours)						// Check every neighbour of the current node
-		{
-			if (!nodeNeighbour->bVisited && nodeNeighbour->bObstacle == 0)			// If the neighbour has not been visited and is not an obstacle:
-				listNotTestedNodes.push_back(nodeNeighbour);						// add it to the not-tested list for future testing
-
-			float fPossiblyLowerGoal = nodeCurrent->fLocalGoal +
-				distance(nodeCurrent, nodeNeighbour);								// Calculate the neighbours possibly lowest parent distance
-
-			/* ------------------------------------------------------------------------------------------
-			*	If we decide to continue the path through the current neighbour due to it having the
-			*	lowest distance, set the neighbouring nodes parent to the current node so we can
-			*	use it the current node as the source of the path from the neighbour.
-			*
-			*	Then update the neighbours local goal to its distance from its parent plus its parents
-			*	local goal.
-			*
-			*	Basically update our current path.
-			* ------------------------------------------------------------------------------------------
-			*/
-			if (fPossiblyLowerGoal < nodeNeighbour->fLocalGoal)
-			{
-				nodeNeighbour->parent = nodeCurrent;
-				nodeNeighbour->fLocalGoal = fPossiblyLowerGoal;
-
-				/* ------------------------------------------------------------------------------------------
-				*	Update the global goal of the neighbour using the heuristic to get the distance from
-				*	the neighbour to the end goal.
-				*
-				*	When sort the nodes-to-test list, it may see that the current path has become too long
-				*	and ditch it in favour of a new shorter path. This bias is what I found to be the
-				*	most interesting part of A*.
-				* ------------------------------------------------------------------------------------------
-				*/
-				nodeNeighbour->fGlobalGoal = nodeNeighbour->fLocalGoal + heuristic(nodeNeighbour, nodeEnd);
-			}// end if
 		}// end for
-	}// end while
+
+	/* ____ EXECUTION ____ */
+
+	PathAlgorithm::Functions::AStarSolver(nodeStart, nodeEnd);						// Call the A-Star solver to generate a path
+
+	/* ____ PATH PREPARATION FOR FOLLOWING ____ */
 
 	sNode *p = nodeEnd;																// Create a temp node to store current node
 	while (p != NULL) {																// Loop until we reach a node with null parent (Start node)
