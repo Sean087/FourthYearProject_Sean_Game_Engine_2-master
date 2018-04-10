@@ -5,24 +5,23 @@
 
 #include "Enemy.h"
 
-Enemy::Enemy(const LoaderParams* pParams) : SDLGameObject(pParams)
+Enemy::Enemy(const Loader* pParams) : SDLGameObject(pParams)
 {
 }
 
-/* -- draw() - Uses SDLGameObject's draw function to screen -- */
+/* draw() - Uses SDLGameObject's draw function to screen */
 void Enemy::draw()
 {
 	SDLGameObject::draw();
 }
 
-/* -- update() - Simple update function to move object -- */
+/* update() - Defines behaviour of object */
 void Enemy::update()
 {
-	m_x += 1;	// Override GameObject::update()
-	m_y += 1;
-	m_currentFrame = int(((SDL_GetTicks() / 100) % 4));
+	// Custom behaviour can be specified here.
 }
 
+/* clean() - Cleans object from memory (not implemented yet) */
 void Enemy::clean()
 {
 }

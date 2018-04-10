@@ -6,7 +6,7 @@
 #ifndef __GameObject__
 #define __GameObject__
 
-#include "LoaderParams.h"
+#include "Loader.h"
 
 class GameObject
 {
@@ -27,7 +27,7 @@ public:
 
 protected:
 
-	GameObject(const LoaderParams* pParams) {}
+	GameObject(const Loader* pParams) {}
 
 	virtual ~GameObject() {}
 

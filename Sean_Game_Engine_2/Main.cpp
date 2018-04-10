@@ -1,3 +1,9 @@
+//
+//	Name:			Main.cpp
+//
+//	Description:	Defines how the main loop is executed.
+//
+
 #include "Game.h"
 
 int main(int argc, char* argv[])

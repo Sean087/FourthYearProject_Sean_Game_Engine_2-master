@@ -1,13 +1,17 @@
 //
-//	Game.cpp
+//	Name:			Game.cpp
 //
-// 
+//	Description:	Defines the code making up the game loop. Creates a simple scene with
+//					a grid of Nodes and Player object. The A* pathfindinglibrary is used
+//					to find potentially optimal paths between two nodes in the grid.
+//					Handles input events, rendering, updating, initialisation, etc.
+//
 
 #include "Game.h"
 #include "TextureManager.h"
 #include "Player.h"
 #include "Enemy.h"
-#include "PathAlgorithm.h"															// Include my path finding algorithm library
+#include "PathAlgorithm.h"															// Include path finding algorithm library
 
 Game* Game::s_pInstance = 0;														// Game singleton
 SDL_Event the_event;																// SDL_Event for handling I/O events
@@ -25,11 +29,11 @@ int nMapHeight = 16;																// Height of the map in numver of nodes
 int dynamicWindowSize_W = (nMapWidth*nodeSize);										// Dynamic size of the windows width - adjusts to width of map
 int dynamicWindowSize_H = (nMapHeight*nodeSize);									// Dynamic size of the windows height - adjusts to height of map
 
-sNode *nodes = nullptr;																// Null pointer - Will be an array of sNode's
-sNode *nodeStart = nullptr;															// The start node - null pointer as it hasn't been set yet
-sNode *nodeEnd = nullptr;															// The end node - null pointer as it hasn't been set yet
+Node *nodes = nullptr;																// Null pointer - Will be an array of sNode's
+Node *startNode = nullptr;															// The start node - null pointer as it hasn't been set yet
+Node *endNode = nullptr;															// The end node - null pointer as it hasn't been set yet
 
-std::stack<sNode*> pathToFollow;													// Stack to contain each node in the path for path following
+std::stack<Node*> pathToFollow;														// Stack to contain each node in the path for path following
 
 
 //------------------------------------------------INITIALIZATION-------------------------------------------------
@@ -82,16 +86,13 @@ bool Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 	std::cout << "INIT STATUS: Game init success!\n";
 	m_bRunning = true;																// Everything initialised successfully, start the main loop
 
-	if (!TextureManager::Instance()->load("assets/Player1.png",
+	if (!TextureManager::Instance()->load("assets/Ghost2.png",
 		"Player1", m_pRenderer))													// Load the Player image asset
 	{
 		return false;
 	}
 
-	player1 = new Player(new LoaderParams(20, 20, 40, 40, "Player1"));				// Instanciate player1 object
-																					//m_gameObjects.push_back(new Player(new LoaderParams(100, 100, 40, 40, "Player1")));
-																					//m_gameObjects.push_back(new Enemy(new LoaderParams(300, 300, 240, 240, "AnimatedKnight")));
-
+	player1 = new Player(new Loader(20, 20, 40, 40, "Player1"));					// Instanciate player1 object
 
 	/* ------------------------------------------------------------------------------------------
 	*	Create an array of nodes to act as the map.
@@ -99,7 +100,7 @@ bool Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 	*	populate it with a new node and some default values.
 	* ------------------------------------------------------------------------------------------
 	*/
-	nodes = new sNode[nMapWidth * nMapHeight];
+	nodes = new Node[nMapWidth * nMapHeight];
 	for (int x = 0; x < nMapWidth; x++)
 		for (int y = 0; y < nMapHeight; y++)
 		{
@@ -120,19 +121,19 @@ bool Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 			/*------------------------------- SET UP N, S, E, W CONECTIONS -------------------------------*/
 			if (y>0)																// If node is not on the top row perform the following
 				nodes[y*nMapWidth + x].vecNeighbours.push_back(&nodes[(y - 1)
-					* nMapWidth + (x + 0)]);										// Push the node NORTH of current node into its vector of neighbours
+					* nMapWidth + x]);												// Push the node NORTH of current node into its vector of neighbours
 
 			if (y<nMapHeight - 1)													// If node is not on the bottom row perform the following
 				nodes[y*nMapWidth + x].vecNeighbours.push_back(&nodes[(y + 1)
-					* nMapWidth + (x + 0)]);										// Push the node SOUTH of the current node into its	vector of neighbours
+					* nMapWidth + x]);												// Push the node SOUTH of the current node into its	vector of neighbours
 
 			if (x>0)																// If node is not on the left-most collumn perform the following
-				nodes[y*nMapWidth + x].vecNeighbours.push_back(&nodes[(y + 0)
-					* nMapWidth + (x - 1)]);										// Push the node WEST of the current node into its vector of neighbours
+				nodes[y*nMapWidth + x].vecNeighbours.push_back(&nodes[y*nMapWidth 
+					+ (x - 1)]);													// Push the node WEST of the current node into its vector of neighbours
 
 			if (x<nMapWidth - 1)													// If node is not on the right-most collumn perform the following
-				nodes[y*nMapWidth + x].vecNeighbours.push_back(&nodes[(y + 0)
-					* nMapWidth + (x + 1)]);										// Push the node EAST of the current node into its vector of neighbours
+				nodes[y*nMapWidth + x].vecNeighbours.push_back(&nodes[y*nMapWidth
+					+ (x + 1)]);													// Push the node EAST of the current node into its vector of neighbours
 
 			/*------------------------------- SET UP NE, SE, NW, SW CONECTIONS -------------------------------*/
 			// Comment out the below four if statements for 4-direction connections
@@ -154,9 +155,9 @@ bool Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 
 		}// end for
 
-	nodeStart = &nodes[(nMapHeight / 2) * nMapWidth + 1];							// Manually position the start marker so it's not a null pointer
-	nodeEnd = &nodes[(nMapHeight / 2) * nMapWidth + nMapWidth - 2];					// Manually position the end marker so it's not a null pointer
-	player1->setPosition(nodeStart->x*nodeSize, nodeStart->y*nodeSize);				// Set player position to Start node
+	startNode = &nodes[(nMapHeight / 2) * nMapWidth + 1];							// Manually position the start node so it's not a null pointer
+	endNode = &nodes[(nMapHeight / 2) * nMapWidth + nMapWidth - 2];					// Manually position the end node so it's not a null pointer
+	player1->setPosition(startNode->x*nodeSize, startNode->y*nodeSize);				// Set player position to Start node
 	
 	std::cout << "MAP INIT STATUS: Map and connections successfully initialized!\n";
 
@@ -173,13 +174,13 @@ void Game::update()
 	int nSelectedNodeX = m_mousePosX / nodeSize;										// Get the node X-position of the click through integer division
 	int nSelectedNodeY = m_mousePosY / nodeSize;										// Get the node Y-position of the click through integer division
 
-																						// SET OBSTACLE
+    // SET OBSTACLE
 	if (m_bClickEvent && !bFollowPath) {												// If left mouse button has been clicked perform the following
-		if (nSelectedNodeX >= 0 && nSelectedNodeX < nMapWidth)							// If the mouse click is in a valid location (inside the map wdith)
-			if (nSelectedNodeY >= 0 && nSelectedNodeY < nMapHeight)						// If the mouse click is in a valid location (inside the map height) 
+		if (nSelectedNodeX >= 0 && nSelectedNodeX < nMapWidth)							// If the mouse click is in a valid location (inside the grid wdith)
+			if (nSelectedNodeY >= 0 && nSelectedNodeY < nMapHeight)						// If the mouse click is in a valid location (inside the grid height) 
 			{
-				if (&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != nodeStart &&
-					&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != nodeEnd)		// If the node clicked on is not the start or end node
+				if (&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != startNode &&
+					&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != endNode)		// If the node clicked on is not the start or end node
 				{
 					nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX].bObstacle =
 						!nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX].bObstacle;	// Set selected nodes obstacle flag to the inverse of what it currently is
@@ -202,9 +203,9 @@ void Game::update()
 		if (nSelectedNodeX >= 0 && nSelectedNodeX < nMapWidth)							// If the mouse click is in a valid location (inside the map wdith)
 			if (nSelectedNodeY >= 0 && nSelectedNodeY < nMapHeight)						// If the mouse click is in a valid location (inside the map height) 
 			{
-				if (&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != nodeEnd)		// If the node clicked on is not the end node
+				if (&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != endNode)		// If the node clicked on is not the end node
 				{
-					nodeStart = &nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX];	// Set the start node to the node that has been double left-clicked
+					startNode = &nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX];	// Set the start node to the node that has been double left-clicked
 
 					AStarSolver();														// Recalculate the path by calling the solver
 				}
@@ -224,9 +225,9 @@ void Game::update()
 		if (nSelectedNodeX >= 0 && nSelectedNodeX < nMapWidth)							// If the mouse click is in a valid location (inside the map wdith)
 			if (nSelectedNodeY >= 0 && nSelectedNodeY < nMapHeight)						// If the mouse click is in a valid location (inside the map height) 
 			{
-				if (&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != nodeStart)	// If the node clicked on is not the start node
+				if (&nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX] != startNode)	// If the node clicked on is not the start node
 				{
-					nodeEnd = &nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX];		// Set the end node to the node that has been double right-clicked
+					endNode = &nodes[nSelectedNodeY * nMapWidth + nSelectedNodeX];		// Set the end node to the node that has been double right-clicked
 
 					AStarSolver();														// Recalculate the path by calling the solver
 				}
@@ -257,7 +258,7 @@ void Game::render()
 	/* ____ NODE, CONNECTION, & PATH RENDERING ____ */
 
 	// * CONNECTIONS *
-	SDL_SetRenderDrawColor(getRenderer(), 100, 100, 100, 255);							// Set draw color to green for drawing the nodes
+	SDL_SetRenderDrawColor(getRenderer(), 255, 100, 100, 255);							// Set draw color to green for drawing the nodes
 
 	if (bRenderConnections) {															// If renderConnections is enabled perform the following
 		for (int x = 0; x < nMapWidth; x++)												// Loop through nodes in grid
@@ -278,17 +279,26 @@ void Game::render()
 	for (int x = 0; x < nMapWidth; x++) {
 		for (int y = 0; y < nMapHeight; y++)
 		{
+			int mouseX, mouseY;
+			SDL_GetMouseState(&mouseX, &mouseY);
+
 			if (nodes[y * nMapWidth + x].bObstacle == true) {							// If the current node is flagged as an obstacle perform the following
 				SDL_SetRenderDrawColor(getRenderer(), 155, 155, 155, 255);				// Set draw color to grey to make the node stand out from the green
 				SDL_RenderFillRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Fill the node with grey color so it is visably an obstacle
+				SDL_SetRenderDrawColor(getRenderer(), 116, 86, 107, 255);				// Set draw color back to muted purple for drawing outlne of node
+				SDL_RenderDrawRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Render the nodes outline
 			}// end if
-			else if (&nodes[y * nMapWidth + x] == nodeStart) {							// Else if the node has been flagged as the start node perform the following
+			else if (&nodes[y * nMapWidth + x] == startNode) {							// Else if the node has been flagged as the start node perform the following
 				SDL_SetRenderDrawColor(getRenderer(), 0, 255, 0, 255);					// Set draw colour to yellow
 				SDL_RenderFillRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Fill the node with yellow color to signify the strat node
+				SDL_SetRenderDrawColor(getRenderer(), 116, 86, 107, 255);				// Set draw color back to muted purple for drawing outline of node
+				SDL_RenderDrawRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Render the nodes outline
 			}// end else if
-			else if (&nodes[y * nMapWidth + x] == nodeEnd) {							// Else if the node has been flagged as the end node perform the following
+			else if (&nodes[y * nMapWidth + x] == endNode) {							// Else if the node has been flagged as the end node perform the following
 				SDL_SetRenderDrawColor(getRenderer(), 255, 0, 0, 255);					// Set draw colour to red
 				SDL_RenderFillRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Fill the node with red color to signify the end node
+				SDL_SetRenderDrawColor(getRenderer(), 116, 86, 107, 255);				// Set draw color back to muted purple for drawing outline of node
+				SDL_RenderDrawRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Render the nodes outline
 			}// end else if
 			else if (nodes[y * nMapWidth + x].bVisited) {								// Else if the node has been flagged as visited perform the following
 				SDL_SetRenderDrawColor(getRenderer(), 255, 155, 0, 255);				// Set draw colour to orange
@@ -296,15 +306,21 @@ void Game::render()
 			}// end else if
 			else {																		// Else it is a traversable node and not an obstacle, perform the following
 				SDL_SetRenderDrawColor(getRenderer(), 116, 86, 107, 255);				// Set draw color back to muted purple for drawing traversable nodes
-				SDL_RenderDrawRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Render the node as a regular green node (traversable)
+				SDL_RenderDrawRect(getRenderer(), &nodes[y * nMapWidth + x].box);		// Render the node as a regular purple node (traversable)
 			}// end else
+
+			SDL_SetRenderDrawColor(getRenderer(), 0, 255, 0, 255);						// Set draw colour to green
+			SDL_RenderDrawRect(getRenderer(), &nodes[mouseY / nodeSize *
+				nMapWidth + mouseX / nodeSize].box);									// Draw the outline of node to green to indicate cursor is over it
+
+			
 		}// end for
 	}// end for
 
 	// * PATH *	
-	if (nodeEnd != nullptr)																// If the end node is not a null pointer perform the following
+	if (endNode != nullptr)																// If the end node is not a null pointer perform the following
 	{
-		sNode *p = nodeEnd;																// Create a new temp node to store current, from which the parent can be referenced
+		Node *p = endNode;																// Create a new temp node to store current, from which the parent can be referenced
 		while (p->parent != nullptr)													// Loop until we reach a node with no parent (Start Node)
 		{
 			SDL_SetRenderDrawColor(getRenderer(), 0, 255, 255, 255);					// Set draw colour to Cyan for path line
@@ -379,11 +395,11 @@ void Game::handleEvents()
 				bRenderConnections = !bRenderConnections;							// Set bRenderConnections to its inverse (flag for rendering connections between nodes)
 				break;
 			case SDLK_SPACE:														// If space bar is pressed, perform the following
-				sNode * p = nodeEnd;												// Create a new temp node to store endNode, from which the parent can be referenced
+				Node * p = endNode;												// Create a new temp node to store endNode, from which the parent can be referenced
 				if (p->parent != nullptr)											// If the end nodes parent is not null, a path exists
 				{
-					if (player1->getX() == nodeEnd->x*nodeSize &&
-						player1->getY() == nodeEnd->y*nodeSize)						// If the player has reached the end node, they cannot initiate path following
+					if (player1->getX() == endNode->x*nodeSize &&
+						player1->getY() == endNode->y*nodeSize)						// If the player has reached the end node, they cannot initiate path following
 					{
 						std::cout << "ERROR: Cannot being path following if player is not at beginning!\n";
 					}
@@ -421,8 +437,8 @@ bool Game::AStarSolver()
 {
 	/* ____ PLAYER PREPERATION ____ */
 
-	int x = nodeStart->x;															// Get current nodes X position
-	int y = nodeStart->y;															// Get current nodes Y position
+	int x = startNode->x;															// Get current nodes X position
+	int y = startNode->y;															// Get current nodes Y position
 	x = x * nodeSize;																// Upscale by factor node size for visualization 
 	y = y * nodeSize;																// Upscale by factor node size for visualization
 
@@ -441,18 +457,18 @@ bool Game::AStarSolver()
 		for (int y = 0; y < nMapHeight; y++)
 		{
 			nodes[y*nMapWidth + x].bVisited = false;								// We haven't visited any nodes yet
-			nodes[y*nMapWidth + x].fGlobalGoal = INFINITY;							// Default is Infinity so we can consider it when searching
-			nodes[y*nMapWidth + x].fLocalGoal = INFINITY;							// Default is also Infinity so we can consider it when searching
+			nodes[y*nMapWidth + x].fEstimatedTotalCost = INFINITY;					// Default is Infinity so we can consider it when searching
+			nodes[y*nMapWidth + x].fCostSoFar = INFINITY;							// Default is also Infinity so we can consider it when searching
 			nodes[y*nMapWidth + x].parent = nullptr;								// All nodes begin with no parent
 		}// end for
 
 	/* ____ EXECUTION ____ */
 
-	PathAlgorithm::Functions::AStarSolver(nodeStart, nodeEnd);						// Call the A-Star solver to generate a path
+	PathAlgorithm::Functions::AStarSolver(startNode, endNode);						// Call the A-Star solver to generate a path
 
 	/* ____ PATH PREPARATION FOR FOLLOWING ____ */
 
-	sNode *p = nodeEnd;																// Create a temp node to store current node
+	Node *p = endNode;																// Create a temp node to store current node
 	while (p != NULL) {																// Loop until we reach a node with null parent (Start node)
 		pathToFollow.push(p);														// Push the node onto the stack
 		p = p->parent;																// Set current node to current nodes parent
@@ -465,13 +481,11 @@ bool Game::AStarSolver()
 //----------------------------------------------PATH FOLLOWING-----------------------------------------------
 
 
-bool Game::followPath() {
+void Game::followPath() {
 	//-------------------- MAKE OBJECT FOLLOW THE A* PATH --------------------
-	if (nodeEnd != nullptr && !pathToFollow.empty())											// If the end node is not a null pointer perform the following
+	if (endNode != nullptr && !pathToFollow.empty())											// If the end node is not a null pointer perform the following
 	{
-		int nCurrentNodeX = player1->getX() / nodeSize;											// Get the node X-position of the player through integer division
-		int nCurrentNodeY = player1->getY() / nodeSize;											// Get the node Y-position of the player through integer division
-		sNode *currentPoint = pathToFollow.top();												// Current point to move towards is set to the top node on the stack (closest node)	
+		Node *currentPoint = pathToFollow.top();												// Current point to move towards is set to the top node on the stack (closest node)	
 
 		player1->moveTowardPoint(currentPoint->x*nodeSize, currentPoint->y*nodeSize);			// Move player towards top node in stack
 
@@ -483,14 +497,12 @@ bool Game::followPath() {
 			}// end if
 		}// end if
 
-		if (player1->getX() == nodeEnd->x*nodeSize && player1->getY() == nodeEnd->y*nodeSize)	// If player has reached end node
+		if (player1->getX() == endNode->x*nodeSize && player1->getY() == endNode->y*nodeSize)	// If player has reached end node
 		{
 			std::cout << "PLAYER STATUS: Player has reached end of path.\n";
 			bFollowPath = false;																// Set path following status back to false
 		}
 	}// end if
-
-	return true;
 }// end followPath
 
 

@@ -1,5 +1,5 @@
 //
-//	Name:			LoaderParams.h
+//	Name:			Loader.h
 //
 //	Description:	Class that takes values into its constructor and sets them
 //					as member variables that can then be accessed to set the 
@@ -7,17 +7,17 @@
 //					a load() function for every class.
 //
 
-#ifndef __LoaderParams__
-#define __LoaderParams__
+#ifndef __Loader__
+#define __Loader__
 
 #include <string>
 #include <SDL.h>
 
-class LoaderParams
+class Loader
 {
 public:
 
-	LoaderParams(int x, int y, int width, int height, std::string textureID)
+	Loader(int x, int y, int width, int height, std::string textureID)
 		: 
 	m_x(x), 
 	m_y(y), 

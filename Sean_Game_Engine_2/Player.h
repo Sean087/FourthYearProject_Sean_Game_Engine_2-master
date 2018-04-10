@@ -8,11 +8,11 @@
 
 #include "SDLGameObject.h"
 
-class Player : public SDLGameObject 
+class Player : public SDLGameObject // Inherit from SDLGameObject
 {
 public:
 
-	Player(const LoaderParams* pParams);
+	Player(const Loader* pParams);
 
 	virtual void draw();
 	virtual void update();
@@ -20,7 +20,7 @@ public:
 	virtual void setPosition(int x, int y);
 	virtual int getX();
 	virtual int getY();
-	virtual bool getIsFollowing();
+	virtual bool getIsFollowing();	// Is the object following a path or not?
 	virtual void setIsFollowing(bool isFollowingPath);
 
 };

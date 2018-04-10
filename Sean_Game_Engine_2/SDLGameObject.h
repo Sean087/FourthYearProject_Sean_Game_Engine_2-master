@@ -12,7 +12,7 @@ class SDLGameObject : public GameObject
 {
 public:
 
-	SDLGameObject(const LoaderParams* pParams);
+	SDLGameObject(const Loader* pParams);
 
 	virtual void draw();
 	virtual void update();

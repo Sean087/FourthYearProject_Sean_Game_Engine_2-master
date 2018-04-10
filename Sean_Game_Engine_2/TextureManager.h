@@ -28,14 +28,16 @@ public:
 		return s_pInstance;
 	}
 
-	bool load(std::string fileName, std::string id, SDL_Renderer* pRenderer);
-	void draw(std::string id, int x, int y, int width, int height, SDL_Renderer* pRenderer, SDL_RendererFlip flip = SDL_FLIP_NONE);
-	void drawFrame(std::string id, int x, int y, int width, int height, int currentRow, int currentFrame, SDL_Renderer* pRenderer, SDL_RendererFlip flip = SDL_FLIP_NONE);
+	bool load(std::string fileName, std::string id, SDL_Renderer* pRenderer);				// Load an image file into a texture
+	void draw(std::string id, int x, int y, int width, int height, SDL_Renderer* pRenderer, 
+		SDL_RendererFlip flip = SDL_FLIP_NONE);												// Renders a texture to the screen
+	void drawFrame(std::string id, int x, int y, int width, int height, int currentRow, 
+		int currentFrame, SDL_Renderer* pRenderer, SDL_RendererFlip flip = SDL_FLIP_NONE);	// Renders animated textures to the screen
 	std::map<std::string, SDL_Texture*> m_textureMap;
 
 private:
 
-	static TextureManager* s_pInstance;
+	static TextureManager* s_pInstance;			// Singleton instance
 
 };
 

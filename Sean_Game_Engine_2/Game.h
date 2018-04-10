@@ -33,63 +33,61 @@ public:
 	}
 
 	// Set running variable to true
-	bool init(const char* title, int xpos, int ypos, int width, int height, bool fullscreen);
-	void render();
-	void update();
-	void handleEvents();
-	void clean();
-	bool AStarSolver();
-	bool followPath();
+	bool init(const char* title, int xpos, int ypos, int width, int height, bool fullscreen);	// initialise the game
+	void render();													// rendering function
+	void update();													// handles all game updates
+	void handleEvents();											// handles input events
+	void clean();													// clears stuff from memory
+	bool AStarSolver();												// Sets up the grid for A* library and calls the library's A* solver
+	void followPath();												// Controls how an object follows the A*-generated path
 
-	// Function to access the private running variable
-	bool running() { return m_bRunning; }
+	bool running() { return m_bRunning; }							// returns the running status of the engine
 
-	SDL_Renderer* getRenderer() const { return m_pRenderer; }
+	SDL_Renderer* getRenderer() const { return m_pRenderer; }		// returns a pointer to the renderer
+	
+	void setMouseClickX(int clickPosX) { m_mousePosX = clickPosX; }	// set mouse click x value after click happens
+	void setMouseClickY(int clickPosY) { m_mousePosY = clickPosY; }	// set mouse click y value after click happens
 
-	void setMouseClickX(int clickPosX) { m_mousePosX = clickPosX; }
-	void setMouseClickY(int clickPosY) { m_mousePosY = clickPosY; }
+	int getMouseClickPosX() { return m_mousePosX; }					// get mouse click x
+	int getMouseClickPosY() { return m_mousePosY; }					// get mouse click y
 
-	int getMouseClickPosX() { return m_mousePosX; }
-	int getMouseClickPosY() { return m_mousePosY; }
+	void setClickEvent(bool click) { m_bClickEvent = click; }		// sets the click event boolean
+	bool getClickEvent() { return m_bClickEvent; }					// get the state of the click event boolean
 
-	void setClickEvent(bool click) { m_bClickEvent = click; }
-	int getClickEvent() { return m_bClickEvent; }
+	void setDLClickEvent(bool click) { m_bDLClickEvent = click; }	// sets the double-left click boolean
+	bool getDLClickEvent() { return m_bDLClickEvent; }				// returns the double-left click boolean
 
-	void setDLClickEvent(bool click) { m_bDLClickEvent = click; }
-	int getDLClickEvent() { return m_bDLClickEvent; }
+	void setDRClickEvent(bool click) { m_bDRClickEvent = click; }	// sets the double-right click boolean
+	bool getDRClickEvent() { return m_bDRClickEvent; }				// returns the double-right click boolean
 
-	void setDRClickEvent(bool click) { m_bDRClickEvent = click; }
-	int getDRClickEvent() { return m_bDRClickEvent; }
+	bool getExitStatus() { return m_bQuit; }// returns the exit status
 
-	bool getExitStatus() { return m_bQuit; }
-
-	int getWinSizeW();
-	int getWinSizeH();
+	int getWinSizeW();						// return window width
+	int getWinSizeH();						// return window height
 
 private:
 
-	SDL_Window * m_pWindow;
-	SDL_Renderer* m_pRenderer;
+	SDL_Window * m_pWindow;					// Window to display the game
+	SDL_Renderer* m_pRenderer;				// Render target
 
-	std::vector<GameObject*> m_gameObjects;
+	std::vector<GameObject*> m_gameObjects;	// Vector to store game object pointers
 
-	int m_currentFrame;
+	int m_currentFrame;						// Used for animated textures
 
-	bool m_bRunning;
+	bool m_bRunning;						// Is the game running or not
 
-	// Create the s_pInstance member variable
-	static Game* s_pInstance;
+	static Game* s_pInstance;				// Game instance for singleton
 
-	int m_mousePosX;
-	int m_mousePosY;
+	int m_mousePosX;						// Position of mouse X upon click event
+	int m_mousePosY;						// Position of mouse Y upon click event
 
-	bool m_bClickEvent = false;
+	bool m_bClickEvent = false;				// Has a mouse click happened?
 
-	bool m_bDLClickEvent = false;
+	bool m_bDLClickEvent = false;			// Has Double left click has happened?
 
-	bool m_bDRClickEvent = false;
+	bool m_bDRClickEvent = false;			// Has Double right click has happened?
 
-	bool m_bQuit = false;															// Flag for quitting the application
+	bool m_bQuit = false;					// Flag for quitting the application
 };
 
 typedef Game TheGame;
